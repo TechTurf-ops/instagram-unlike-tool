@@ -1,30 +1,37 @@
 # Instagram Unlike Tool
 
-A lightweight browser-based tool for removing liked posts and Reels from your Instagram Likes activity in batches.
+A lightweight browser tool for managing and removing liked posts and Reels from Instagram in configurable batches.
 
-The tool runs directly inside Instagram and includes a compact control panel with live progress, batch tracking, Start/Stop controls, and automatic processing.
+It runs directly inside Instagram and adds a compact floating control panel with live progress tracking, automatic processing, and customizable settings.
 
 ## Features
 
-* Compact in-page control panel
-* Start and Stop controls
-* Live batch progress
-* Live selected-item counter
-* Automatically opens Instagram Select mode
-* Selects up to 50 liked posts or Reels per batch
-* Automatically scrolls to load more content
-* Automatically presses Unlike
-* Handles the confirmation Unlike prompt
+* Compact floating interface
+* Automatic Select mode
+* Automatic scrolling
+* Batch-based Unlike processing
+* Automatic confirmation handling
 * Waits for Instagram to finish refreshing before continuing
-* Automatically starts the next batch
-* Retries items that fail to select
-* Stops when an action cannot be verified
-* Draggable and minimizable interface
-* Does not require login credentials, cookies, or tokens
+* Automatically continues to the next batch
+* Live selected-item counter
+* Live batch counter
+* Progress bar
+* Start and Stop controls
+* Activity log
+* Draggable interface
+* Minimize control
+* Compact Settings panel
+* Blue, Green, and Teal themes
+* Configurable selection delay
+* Configurable batch size
+* Configurable number of batches
+* Configurable scrolling behavior
+* Configurable refresh timeout
+* No passwords, cookies, tokens, or API credentials required
 
 ## How to Use
 
-1. Open Instagram on a desktop browser.
+1. Open Instagram in a desktop browser.
 
 2. Go to:
 
@@ -32,57 +39,53 @@ The tool runs directly inside Instagram and includes a compact control panel wit
 
 3. Open Developer Tools.
 
-   **Chrome / Edge**
+   Chrome / Edge on Windows:
 
    `Ctrl + Shift + J`
 
-   **macOS**
+   Chrome on macOS:
 
    `Command + Option + J`
 
-4. Open the **Console** tab.
+4. Open the **Console**.
 
-5. Copy the code from:
+5. Copy the contents of:
 
    `instagram-unlike.js`
 
-6. Paste it into the Console and press Enter.
+6. Paste the script into the Console.
 
-7. The **Instagram Unlike Tool** panel will appear on the page.
+7. Press Enter.
 
-8. Press **Start**.
+8. The **Instagram Unlike Tool** panel will appear.
 
-The tool will begin selecting liked posts and Reels automatically.
+9. Press **Start**.
+
+The tool will automatically open Select mode, select liked items, scroll through the list, perform the Unlike action, confirm it, and wait for Instagram to finish refreshing before starting another batch.
 
 ## Interface
 
-The control panel displays:
+The main panel contains the current status, batch number, selected-item counter, progress bar, Start and Stop controls, and a small activity log.
 
-* Current batch
-* Number of selected items
-* Progress bar
-* Current operation status
-* Activity log
-* Start button
-* Stop button
-* Minimize control
-* Close control
+The window can be dragged anywhere on the page.
 
-The window can also be dragged around the page.
+The header also contains three controls:
 
-## Configuration
+**Settings** — opens the compact Settings panel.
 
-The main settings can be changed near the top of `instagram-unlike.js`:
+**Minimize** — collapses the tool to its header.
 
-```js
-const BATCH_SIZE = 50;
-const MAX_BATCHES = 10;
-const CLICK_DELAY = 1000;
-```
+**Close** — closes the tool and stops the current run.
 
-### BATCH_SIZE
+## Settings
 
-Controls how many items are selected before the tool performs the Unlike action.
+Click the **gear icon** in the top-right corner of the tool to open Settings.
+
+The following options can be changed:
+
+### Batch Size
+
+Controls how many liked items are selected before the Unlike action is performed.
 
 Default:
 
@@ -90,9 +93,15 @@ Default:
 50
 ```
 
-### MAX_BATCHES
+Maximum:
 
-Controls the maximum number of batches processed during one run.
+```js
+50
+```
+
+### Max Batches
+
+Controls the maximum number of batches processed during a single run.
 
 Default:
 
@@ -100,13 +109,13 @@ Default:
 10
 ```
 
-With the default configuration, the tool can process up to:
+With the default settings, the tool can process up to:
 
 ```text
 50 × 10 = 500 items
 ```
 
-### CLICK_DELAY
+### Selection Delay
 
 Controls the delay between item selections in milliseconds.
 
@@ -116,75 +125,101 @@ Default:
 1000
 ```
 
-This means approximately one selection per second.
+This corresponds to approximately one selection per second.
+
+### Scroll Delay
+
+Controls how long the tool waits after automatically scrolling the page.
+
+Default:
+
+```js
+1100
+```
+
+### Scroll Amount
+
+Controls how far the page moves during each automatic scroll.
+
+Default:
+
+```js
+0.45
+```
+
+This represents 45% of the browser viewport height.
+
+### Refresh Timeout
+
+Controls how long the tool will wait for Instagram to finish processing an Unlike operation and reload the Likes interface.
+
+Default:
+
+```js
+45000
+```
+
+This corresponds to 45 seconds.
+
+### Theme
+
+The interface includes three accent themes:
+
+* Blue
+* Green
+* Teal
+
+Choose a theme and press **Save Settings** to apply it.
+
+## How Processing Works
+
+For each batch, the tool automatically opens Instagram's Select mode and begins selecting items from the Likes activity page.
+
+After reaching the configured batch size, it presses Unlike and handles the confirmation prompt.
+
+The tool then waits until Instagram has finished processing the change and the normal Select control becomes available again.
+
+Only after the previous operation is fully completed will the next batch begin.
 
 ## Stopping the Tool
 
-Press the **Stop** button in the interface.
+Press **Stop** in the interface.
 
-You can also stop it manually from the Console:
+You can also stop it manually from the browser Console:
 
 ```js
 window.STOP_IG = true;
 ```
 
-The tool attempts to stop safely after the current action.
+The tool will stop as safely as possible after the current action.
 
-## How It Works
+## Security
 
-The tool interacts with Instagram's existing **Your Activity → Likes** interface.
+The tool does not require or request your Instagram password, session ID, cookies, CSRF token, access token, or API credentials.
 
-For each batch it:
+Never paste authentication information or login credentials into scripts from unknown sources.
 
-1. Opens Select mode.
-2. Selects liked posts or Reels.
-3. Scrolls automatically when more items are needed.
-4. Reaches the configured batch size.
-5. Presses Unlike.
-6. Confirms the Unlike action.
-7. Waits for Instagram to finish processing and refreshing the list.
-8. Starts the next batch.
+## Browser Compatibility
 
-The next batch does not begin until the previous Unlike operation has finished.
+The tool is primarily intended for desktop Chromium-based browsers, including Google Chrome, Microsoft Edge, and Brave.
 
-## Safety
-
-The tool does **not** require or request your:
-
-* Instagram password
-* Session ID
-* Cookies
-* CSRF token
-* Access token
-* API credentials
-
-Never paste your login credentials, session information, or authentication tokens into scripts from unknown sources.
+Other browsers may work but are not guaranteed.
 
 ## Important
 
 This project is not affiliated with, endorsed by, sponsored by, or connected to Instagram or Meta.
 
-Instagram can change its website structure at any time. Changes to the Instagram interface may cause some features of this tool to stop working.
+Instagram can modify its website interface at any time. Changes to Instagram's page structure may cause this tool to stop working until the selectors are updated.
 
 If Instagram displays a temporary restriction, rate limit, or block, stop using the tool and wait for the restriction to expire.
 
 This project is not intended to bypass Instagram restrictions, rate limits, temporary blocks, or other platform protections.
 
-## Browser Compatibility
-
-The tool is primarily designed for desktop Chromium-based browsers such as:
-
-* Google Chrome
-* Microsoft Edge
-* Brave
-
-Other browsers may work but are not guaranteed.
-
 ## Disclaimer
 
 Use this project at your own risk.
 
-Automated interaction with websites may be restricted by their terms, policies, or technical limitations. The author is not responsible for account restrictions, removed content, data loss, or other consequences resulting from use of this project.
+Automated interaction with websites may be restricted by their terms, policies, or technical limitations. The author is not responsible for account restrictions, data loss, removed content, or other consequences resulting from the use of this project.
 
 ## License
 
