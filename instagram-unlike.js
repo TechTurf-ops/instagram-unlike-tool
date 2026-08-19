@@ -5,13 +5,16 @@
 
     window.STOP_IG = false;
 
-    const BATCH_SIZE = 50;
-    const MAX_BATCHES = 10;
-    const CLICK_DELAY = 1000;
-    const SCROLL_DELAY = 1100;
-    const SCROLL_AMOUNT = 0.45;
-    const AFTER_UNLIKE_MAX_WAIT = 45000;
-    const SELECT_OPEN_MAX_WAIT = 10000;
+    const config = {
+        batchSize: 50,
+        maxBatches: 10,
+        clickDelay: 1000,
+        scrollDelay: 1100,
+        scrollAmount: 0.45,
+        refreshTimeout: 45000,
+        selectOpenTimeout: 10000,
+        theme: "blue"
+    };
 
     const sleep = ms =>
         new Promise(resolve => setTimeout(resolve, ms));
@@ -23,12 +26,17 @@
     panel.innerHTML = `
         <style>
             #ig-unlike-tool-ui {
+                --accent-1: #28c6e8;
+                --accent-2: #278fe8;
+                --accent-3: #526dff;
+                --accent-soft: rgba(39,143,232,.15);
+
                 position: fixed;
                 top: 72px;
                 right: 20px;
-                width: 350px;
+                width: 330px;
                 z-index: 2147483647;
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
                 color: #f4f7f8;
             }
 
@@ -41,31 +49,31 @@
                 background: #111719;
                 border: 1px solid #26363a;
                 border-radius: 14px;
-                box-shadow: 0 18px 50px rgba(0, 0, 0, .5);
+                box-shadow: 0 18px 50px rgba(0,0,0,.50);
             }
 
             .igu-header {
-                height: 52px;
+                height: 50px;
                 display: flex;
                 align-items: center;
-                padding: 0 13px;
+                padding: 0 11px;
                 border-bottom: 1px solid #223034;
                 cursor: move;
                 user-select: none;
             }
 
             .igu-logo {
-                width: 15px;
-                height: 15px;
-                margin-right: 9px;
+                width: 14px;
+                height: 14px;
+                margin-right: 8px;
                 border-radius: 50%;
                 background: linear-gradient(
                     135deg,
-                    #16d4b3,
-                    #22a9e8,
-                    #487bff
+                    var(--accent-1),
+                    var(--accent-2),
+                    var(--accent-3)
                 );
-                box-shadow: 0 0 14px rgba(34, 169, 232, .35);
+                box-shadow: 0 0 12px var(--accent-soft);
             }
 
             .igu-title-wrap {
@@ -74,21 +82,21 @@
             }
 
             .igu-title {
-                font-size: 15px;
-                line-height: 18px;
+                font-size: 14px;
                 font-weight: 700;
+                line-height: 17px;
             }
 
             .igu-subtitle {
                 margin-top: 1px;
-                color: #819095;
-                font-size: 10px;
+                color: #7e8e93;
+                font-size: 9px;
             }
 
             .igu-header-actions {
                 display: flex;
                 align-items: center;
-                gap: 3px;
+                gap: 2px;
             }
 
             .igu-icon-button {
@@ -96,36 +104,48 @@
                 height: 27px;
                 display: grid;
                 place-items: center;
+                padding: 0;
                 border: 0;
                 border-radius: 7px;
                 color: #89979b;
                 background: transparent;
-                font-size: 17px;
                 cursor: pointer;
             }
 
-            .igu-icon-button:hover {
+            .igu-icon-button:hover,
+            .igu-icon-button.active {
                 color: #ffffff;
-                background: #1e292c;
+                background: var(--accent-soft);
             }
 
-            .igu-body {
-                padding: 24px 25px 22px;
+            .igu-icon-button svg {
+                width: 14px;
+                height: 14px;
+                fill: none;
+                stroke: currentColor;
+                stroke-width: 1.8;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+            }
+
+            .igu-main {
+                display: block;
+                padding: 20px 22px 19px;
                 text-align: center;
             }
 
+            .igu-main.hidden {
+                display: none;
+            }
+
             .igu-mark {
-                width: 58px;
-                height: 58px;
+                width: 50px;
+                height: 50px;
                 position: relative;
-                margin: 0 auto 15px;
+                margin: 0 auto 12px;
                 border-radius: 50%;
-                background: linear-gradient(
-                    145deg,
-                    rgba(22, 212, 179, .17),
-                    rgba(34, 169, 232, .17)
-                );
-                border: 1px solid rgba(34, 169, 232, .12);
+                background: var(--accent-soft);
+                border: 1px solid rgba(255,255,255,.04);
             }
 
             .igu-mark::before,
@@ -137,70 +157,69 @@
                 border-radius: 99px;
                 background: linear-gradient(
                     135deg,
-                    #18d2ae,
-                    #31aee8
+                    var(--accent-1),
+                    var(--accent-2)
                 );
-                transform: translate(-50%, -50%);
+                transform: translate(-50%,-50%);
             }
 
             .igu-mark::before {
-                width: 25px;
-                height: 5px;
+                width: 22px;
+                height: 4px;
             }
 
             .igu-mark::after {
-                width: 5px;
-                height: 25px;
+                width: 4px;
+                height: 22px;
             }
 
             .igu-status {
-                font-size: 17px;
+                font-size: 16px;
                 font-weight: 720;
-                letter-spacing: -.25px;
+                letter-spacing: -.2px;
             }
 
             .igu-description {
-                max-width: 290px;
-                margin: 7px auto 16px;
+                max-width: 270px;
+                margin: 6px auto 14px;
                 color: #8e9a9e;
-                font-size: 12px;
-                line-height: 1.45;
+                font-size: 11px;
+                line-height: 1.4;
             }
 
             .igu-stats {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
-                gap: 8px;
-                margin-bottom: 11px;
+                gap: 7px;
+                margin-bottom: 10px;
             }
 
             .igu-stat {
-                padding: 9px 10px;
+                padding: 8px 9px;
                 background: #172023;
                 border: 1px solid #263337;
-                border-radius: 9px;
+                border-radius: 8px;
                 text-align: left;
             }
 
             .igu-stat-label {
                 color: #708085;
-                font-size: 9px;
-                font-weight: 600;
+                font-size: 8px;
+                font-weight: 650;
                 text-transform: uppercase;
-                letter-spacing: .65px;
+                letter-spacing: .6px;
             }
 
             .igu-stat-value {
-                margin-top: 3px;
-                font-size: 15px;
+                margin-top: 2px;
+                font-size: 14px;
                 font-weight: 700;
             }
 
             .igu-progress-shell {
-                width: 100%;
                 height: 5px;
                 overflow: hidden;
-                margin-bottom: 16px;
+                margin-bottom: 14px;
                 border-radius: 99px;
                 background: #202c2f;
             }
@@ -211,9 +230,9 @@
                 border-radius: inherit;
                 background: linear-gradient(
                     90deg,
-                    #19cfa8,
-                    #28aee8,
-                    #4c82ff
+                    var(--accent-1),
+                    var(--accent-2),
+                    var(--accent-3)
                 );
                 transition: width .2s ease;
             }
@@ -221,27 +240,27 @@
             .igu-buttons {
                 display: flex;
                 justify-content: center;
-                gap: 8px;
+                gap: 7px;
             }
 
             .igu-primary,
             .igu-secondary {
-                height: 40px;
-                padding: 0 18px;
-                border-radius: 9px;
-                font-size: 13px;
+                height: 38px;
+                padding: 0 17px;
+                border-radius: 8px;
+                font-size: 12px;
                 font-weight: 700;
                 cursor: pointer;
             }
 
             .igu-primary {
-                min-width: 112px;
+                min-width: 105px;
                 color: #071516;
                 border: 0;
                 background: linear-gradient(
                     135deg,
-                    #18d0ad,
-                    #27aee7
+                    var(--accent-1),
+                    var(--accent-2)
                 );
             }
 
@@ -255,7 +274,7 @@
             }
 
             .igu-secondary {
-                min-width: 92px;
+                min-width: 82px;
                 color: #dfe7e9;
                 background: #172023;
                 border: 1px solid #2a393d;
@@ -267,22 +286,135 @@
 
             .igu-log {
                 display: none;
-                max-height: 72px;
+                max-height: 64px;
                 overflow-y: auto;
-                margin-top: 13px;
-                padding: 8px 9px;
+                margin-top: 11px;
+                padding: 7px 8px;
                 color: #7e8e92;
                 background: #0c1113;
                 border: 1px solid #1d292c;
-                border-radius: 8px;
-                font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-                font-size: 9px;
-                line-height: 1.45;
+                border-radius: 7px;
+                font-family: ui-monospace,SFMono-Regular,Menlo,monospace;
+                font-size: 8px;
+                line-height: 1.4;
                 text-align: left;
                 white-space: pre-wrap;
             }
 
-            .igu-card.igu-minimized .igu-body {
+            .igu-settings {
+                display: none;
+                padding: 13px;
+            }
+
+            .igu-settings.active {
+                display: block;
+            }
+
+            .igu-settings-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 10px;
+            }
+
+            .igu-settings-title {
+                font-size: 13px;
+                font-weight: 700;
+            }
+
+            .igu-settings-note {
+                color: #68777b;
+                font-size: 8px;
+            }
+
+            .igu-setting-list {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+
+            .igu-setting {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                min-height: 35px;
+                padding: 5px 7px 5px 9px;
+                background: #172023;
+                border: 1px solid #263337;
+                border-radius: 7px;
+            }
+
+            .igu-setting-info {
+                flex: 1;
+                min-width: 0;
+                padding-right: 7px;
+            }
+
+            .igu-setting-name {
+                color: #e5edef;
+                font-size: 10px;
+                font-weight: 650;
+            }
+
+            .igu-setting-desc {
+                margin-top: 1px;
+                color: #647277;
+                font-size: 7px;
+            }
+
+            .igu-input,
+            .igu-select {
+                width: 76px;
+                height: 26px;
+                padding: 0 6px;
+                border: 1px solid #304145;
+                border-radius: 6px;
+                outline: none;
+                color: #e8eff1;
+                background: #101719;
+                font-size: 9px;
+            }
+
+            .igu-input:focus,
+            .igu-select:focus {
+                border-color: var(--accent-2);
+            }
+
+            .igu-select {
+                width: 80px;
+            }
+
+            .igu-save {
+                width: 100%;
+                height: 33px;
+                margin-top: 9px;
+                border: 0;
+                border-radius: 7px;
+                color: #071516;
+                background: linear-gradient(
+                    135deg,
+                    var(--accent-1),
+                    var(--accent-2)
+                );
+                font-size: 10px;
+                font-weight: 700;
+                cursor: pointer;
+            }
+
+            .igu-save:hover {
+                filter: brightness(1.08);
+            }
+
+            .igu-save-status {
+                height: 12px;
+                margin-top: 5px;
+                color: var(--accent-1);
+                font-size: 8px;
+                text-align: center;
+            }
+
+            .igu-card.igu-minimized .igu-main,
+            .igu-card.igu-minimized .igu-settings {
                 display: none;
             }
         </style>
@@ -297,12 +429,31 @@
                 </div>
 
                 <div class="igu-header-actions">
-                    <button class="igu-icon-button igu-minimize">−</button>
-                    <button class="igu-icon-button igu-close">×</button>
+
+                    <button class="igu-icon-button igu-settings-button" title="Settings">
+                        <svg viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.08A1.7 1.7 0 0 0 8.97 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3v-4h.08A1.7 1.7 0 0 0 4.6 8.97a1.7 1.7 0 0 0-.34-1.88l-.06-.06L7.03 4.2l.06.06A1.7 1.7 0 0 0 8.97 4.6 1.7 1.7 0 0 0 10 3.04V3h4v.08a1.7 1.7 0 0 0 1.03 1.52 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06a1.7 1.7 0 0 0-.34 1.88A1.7 1.7 0 0 0 20.96 10H21v4h-.08A1.7 1.7 0 0 0 19.4 15z"></path>
+                        </svg>
+                    </button>
+
+                    <button class="igu-icon-button igu-minimize" title="Minimize">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M6 12h12"></path>
+                        </svg>
+                    </button>
+
+                    <button class="igu-icon-button igu-close" title="Close">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M7 7l10 10"></path>
+                            <path d="M17 7L7 17"></path>
+                        </svg>
+                    </button>
+
                 </div>
             </div>
 
-            <div class="igu-body">
+            <div class="igu-main">
                 <div class="igu-mark"></div>
 
                 <div class="igu-status">Ready</div>
@@ -314,12 +465,12 @@
                 <div class="igu-stats">
                     <div class="igu-stat">
                         <div class="igu-stat-label">Batch</div>
-                        <div class="igu-stat-value igu-batch">0 / ${MAX_BATCHES}</div>
+                        <div class="igu-stat-value igu-batch">0 / 10</div>
                     </div>
 
                     <div class="igu-stat">
                         <div class="igu-stat-label">Selected</div>
-                        <div class="igu-stat-value igu-selected">0 / ${BATCH_SIZE}</div>
+                        <div class="igu-stat-value igu-selected">0 / 50</div>
                     </div>
                 </div>
 
@@ -334,6 +485,130 @@
 
                 <div class="igu-log"></div>
             </div>
+
+            <div class="igu-settings">
+                <div class="igu-settings-header">
+                    <div class="igu-settings-title">Settings</div>
+                    <div class="igu-settings-note">Runtime controls</div>
+                </div>
+
+                <div class="igu-setting-list">
+
+                    <div class="igu-setting">
+                        <div class="igu-setting-info">
+                            <div class="igu-setting-name">Batch Size</div>
+                            <div class="igu-setting-desc">Items per batch</div>
+                        </div>
+
+                        <input
+                            class="igu-input setting-batch-size"
+                            type="number"
+                            min="1"
+                            max="50"
+                            value="50"
+                        >
+                    </div>
+
+                    <div class="igu-setting">
+                        <div class="igu-setting-info">
+                            <div class="igu-setting-name">Max Batches</div>
+                            <div class="igu-setting-desc">Maximum batches</div>
+                        </div>
+
+                        <input
+                            class="igu-input setting-max-batches"
+                            type="number"
+                            min="1"
+                            max="100"
+                            value="10"
+                        >
+                    </div>
+
+                    <div class="igu-setting">
+                        <div class="igu-setting-info">
+                            <div class="igu-setting-name">Selection Delay</div>
+                            <div class="igu-setting-desc">Milliseconds</div>
+                        </div>
+
+                        <input
+                            class="igu-input setting-click-delay"
+                            type="number"
+                            min="500"
+                            max="10000"
+                            step="100"
+                            value="1000"
+                        >
+                    </div>
+
+                    <div class="igu-setting">
+                        <div class="igu-setting-info">
+                            <div class="igu-setting-name">Scroll Delay</div>
+                            <div class="igu-setting-desc">Milliseconds</div>
+                        </div>
+
+                        <input
+                            class="igu-input setting-scroll-delay"
+                            type="number"
+                            min="300"
+                            max="10000"
+                            step="100"
+                            value="1100"
+                        >
+                    </div>
+
+                    <div class="igu-setting">
+                        <div class="igu-setting-info">
+                            <div class="igu-setting-name">Scroll Amount</div>
+                            <div class="igu-setting-desc">Viewport ratio</div>
+                        </div>
+
+                        <input
+                            class="igu-input setting-scroll-amount"
+                            type="number"
+                            min="0.1"
+                            max="1"
+                            step="0.05"
+                            value="0.45"
+                        >
+                    </div>
+
+                    <div class="igu-setting">
+                        <div class="igu-setting-info">
+                            <div class="igu-setting-name">Refresh Timeout</div>
+                            <div class="igu-setting-desc">Milliseconds</div>
+                        </div>
+
+                        <input
+                            class="igu-input setting-refresh-timeout"
+                            type="number"
+                            min="5000"
+                            max="120000"
+                            step="1000"
+                            value="45000"
+                        >
+                    </div>
+
+                    <div class="igu-setting">
+                        <div class="igu-setting-info">
+                            <div class="igu-setting-name">Theme</div>
+                            <div class="igu-setting-desc">Accent color</div>
+                        </div>
+
+                        <select class="igu-select setting-theme">
+                            <option value="blue">Blue</option>
+                            <option value="green">Green</option>
+                            <option value="teal">Teal</option>
+                        </select>
+                    </div>
+
+                </div>
+
+                <button class="igu-save">
+                    Save Settings
+                </button>
+
+                <div class="igu-save-status"></div>
+            </div>
         </div>
     `;
 
@@ -341,21 +616,80 @@
 
     window.__IG_UNLIKE_UI__ = panel;
 
-    const card = panel.querySelector(".igu-card");
-    const header = panel.querySelector(".igu-header");
-    const startButton = panel.querySelector(".igu-start");
-    const stopButton = panel.querySelector(".igu-stop");
-    const closeButton = panel.querySelector(".igu-close");
-    const minimizeButton = panel.querySelector(".igu-minimize");
+    const card =
+        panel.querySelector(".igu-card");
 
-    const statusElement = panel.querySelector(".igu-status");
-    const descriptionElement = panel.querySelector(".igu-description");
-    const selectedElement = panel.querySelector(".igu-selected");
-    const batchElement = panel.querySelector(".igu-batch");
-    const progressElement = panel.querySelector(".igu-progress");
-    const logElement = panel.querySelector(".igu-log");
+    const header =
+        panel.querySelector(".igu-header");
+
+    const mainPage =
+        panel.querySelector(".igu-main");
+
+    const settingsPage =
+        panel.querySelector(".igu-settings");
+
+    const settingsButton =
+        panel.querySelector(".igu-settings-button");
+
+    const minimizeButton =
+        panel.querySelector(".igu-minimize");
+
+    const closeButton =
+        panel.querySelector(".igu-close");
+
+    const startButton =
+        panel.querySelector(".igu-start");
+
+    const stopButton =
+        panel.querySelector(".igu-stop");
+
+    const statusElement =
+        panel.querySelector(".igu-status");
+
+    const descriptionElement =
+        panel.querySelector(".igu-description");
+
+    const selectedElement =
+        panel.querySelector(".igu-selected");
+
+    const batchElement =
+        panel.querySelector(".igu-batch");
+
+    const progressElement =
+        panel.querySelector(".igu-progress");
+
+    const logElement =
+        panel.querySelector(".igu-log");
+
+    const saveButton =
+        panel.querySelector(".igu-save");
+
+    const saveStatus =
+        panel.querySelector(".igu-save-status");
+
+    const batchSizeInput =
+        panel.querySelector(".setting-batch-size");
+
+    const maxBatchesInput =
+        panel.querySelector(".setting-max-batches");
+
+    const clickDelayInput =
+        panel.querySelector(".setting-click-delay");
+
+    const scrollDelayInput =
+        panel.querySelector(".setting-scroll-delay");
+
+    const scrollAmountInput =
+        panel.querySelector(".setting-scroll-amount");
+
+    const refreshTimeoutInput =
+        panel.querySelector(".setting-refresh-timeout");
+
+    const themeInput =
+        panel.querySelector(".setting-theme");
 
     let running = false;
+    let settingsOpen = false;
 
     function setStatus(title, description = "") {
         statusElement.textContent = title;
@@ -367,15 +701,18 @@
 
     function setSelected(count) {
         selectedElement.textContent =
-            `${count} / ${BATCH_SIZE}`;
+            `${count} / ${config.batchSize}`;
 
         progressElement.style.width =
-            `${Math.min(100, count / BATCH_SIZE * 100)}%`;
+            `${Math.min(
+                100,
+                count / config.batchSize * 100
+            )}%`;
     }
 
     function setBatch(batch) {
         batchElement.textContent =
-            `${batch} / ${MAX_BATCHES}`;
+            `${batch} / ${config.maxBatches}`;
     }
 
     function log(message) {
@@ -397,11 +734,211 @@
             logElement.scrollHeight;
     }
 
+    function applyTheme(theme) {
+        const themes = {
+            blue: {
+                a1: "#28c6e8",
+                a2: "#278fe8",
+                a3: "#526dff",
+                soft: "rgba(39,143,232,.15)"
+            },
+
+            green: {
+                a1: "#43d584",
+                a2: "#20b96a",
+                a3: "#138e54",
+                soft: "rgba(32,185,106,.15)"
+            },
+
+            teal: {
+                a1: "#19d4af",
+                a2: "#18acb8",
+                a3: "#287dca",
+                soft: "rgba(25,212,175,.14)"
+            }
+        };
+
+        const data =
+            themes[theme] ||
+            themes.blue;
+
+        panel.style.setProperty(
+            "--accent-1",
+            data.a1
+        );
+
+        panel.style.setProperty(
+            "--accent-2",
+            data.a2
+        );
+
+        panel.style.setProperty(
+            "--accent-3",
+            data.a3
+        );
+
+        panel.style.setProperty(
+            "--accent-soft",
+            data.soft
+        );
+    }
+
+    function toggleSettings() {
+        settingsOpen =
+            !settingsOpen;
+
+        settingsButton.classList.toggle(
+            "active",
+            settingsOpen
+        );
+
+        mainPage.classList.toggle(
+            "hidden",
+            settingsOpen
+        );
+
+        settingsPage.classList.toggle(
+            "active",
+            settingsOpen
+        );
+
+        if (
+            card.classList.contains(
+                "igu-minimized"
+            )
+        ) {
+            card.classList.remove(
+                "igu-minimized"
+            );
+        }
+    }
+
+    settingsButton.addEventListener(
+        "click",
+        event => {
+            event.stopPropagation();
+            toggleSettings();
+        }
+    );
+
+    saveButton.addEventListener(
+        "click",
+        () => {
+            const batchSize =
+                Number(batchSizeInput.value);
+
+            const maxBatches =
+                Number(maxBatchesInput.value);
+
+            const clickDelay =
+                Number(clickDelayInput.value);
+
+            const scrollDelay =
+                Number(scrollDelayInput.value);
+
+            const scrollAmount =
+                Number(scrollAmountInput.value);
+
+            const refreshTimeout =
+                Number(refreshTimeoutInput.value);
+
+            if (
+                !Number.isFinite(batchSize) ||
+                batchSize < 1 ||
+                batchSize > 50
+            ) {
+                saveStatus.textContent =
+                    "Batch Size must be 1–50.";
+
+                return;
+            }
+
+            if (
+                !Number.isFinite(maxBatches) ||
+                maxBatches < 1
+            ) {
+                saveStatus.textContent =
+                    "Invalid Max Batches.";
+
+                return;
+            }
+
+            if (
+                !Number.isFinite(clickDelay) ||
+                clickDelay < 500
+            ) {
+                saveStatus.textContent =
+                    "Delay must be at least 500 ms.";
+
+                return;
+            }
+
+            if (
+                !Number.isFinite(scrollDelay) ||
+                scrollDelay < 300
+            ) {
+                saveStatus.textContent =
+                    "Invalid Scroll Delay.";
+
+                return;
+            }
+
+            if (
+                !Number.isFinite(scrollAmount) ||
+                scrollAmount <= 0 ||
+                scrollAmount > 1
+            ) {
+                saveStatus.textContent =
+                    "Scroll Amount must be 0.1–1.";
+
+                return;
+            }
+
+            config.batchSize =
+                batchSize;
+
+            config.maxBatches =
+                maxBatches;
+
+            config.clickDelay =
+                clickDelay;
+
+            config.scrollDelay =
+                scrollDelay;
+
+            config.scrollAmount =
+                scrollAmount;
+
+            config.refreshTimeout =
+                refreshTimeout;
+
+            config.theme =
+                themeInput.value;
+
+            applyTheme(
+                config.theme
+            );
+
+            setBatch(0);
+            setSelected(0);
+
+            saveStatus.textContent =
+                "Settings saved.";
+
+            setTimeout(() => {
+                saveStatus.textContent = "";
+            }, 1800);
+        }
+    );
+
     function visible(el) {
         if (!el) return false;
 
-        const r = el.getBoundingClientRect();
-        const s = getComputedStyle(el);
+        const r =
+            el.getBoundingClientRect();
+
+        const s =
+            getComputedStyle(el);
 
         return (
             r.width > 0 &&
@@ -438,17 +975,24 @@
         root = document
     ) {
         const wanted =
-            words.map(x => x.toLowerCase());
+            words.map(
+                x => x.toLowerCase()
+            );
 
         return [
             ...root.querySelectorAll(
                 'button,[role="button"],[tabindex],div,span'
             )
         ]
-            .filter(el => !panel.contains(el))
+            .filter(
+                el => !panel.contains(el)
+            )
             .filter(visible)
-            .filter(el =>
-                wanted.includes(textOf(el))
+            .filter(
+                el =>
+                    wanted.includes(
+                        textOf(el)
+                    )
             )
             .sort((a, b) => {
                 const A =
@@ -478,7 +1022,8 @@
     }
 
     function clickableParent(el) {
-        if (!el) return null;
+        if (!el)
+            return null;
 
         let node = el;
 
@@ -487,8 +1032,11 @@
             i < 8 && node;
             i++
         ) {
-            if (panel.contains(node))
+            if (
+                panel.contains(node)
+            ) {
                 return null;
+            }
 
             if (
                 node.matches?.(
@@ -513,8 +1061,11 @@
             clickableParent(el) ||
             el;
 
-        if (panel.contains(target))
+        if (
+            panel.contains(target)
+        ) {
             return false;
+        }
 
         try {
             target.click();
@@ -527,7 +1078,9 @@
     function getSelectedCounter() {
         for (
             const el of
-            document.querySelectorAll("body *")
+            document.querySelectorAll(
+                "body *"
+            )
         ) {
             if (
                 panel.contains(el) ||
@@ -549,7 +1102,8 @@
             if (m) {
                 return {
                     exists: true,
-                    count: Number(m[1])
+                    count:
+                        Number(m[1])
                 };
             }
 
@@ -561,7 +1115,8 @@
             if (m) {
                 return {
                     exists: true,
-                    count: Number(m[1])
+                    count:
+                        Number(m[1])
                 };
             }
         }
@@ -574,7 +1129,8 @@
 
     function selectedCount() {
         const count =
-            getSelectedCounter().count;
+            getSelectedCounter()
+                .count;
 
         setSelected(count);
 
@@ -596,8 +1152,11 @@
     }
 
     function normalSelectVisible() {
-        if (selectModeActive())
+        if (
+            selectModeActive()
+        ) {
             return false;
+        }
 
         return !!findExactText([
             "select",
@@ -617,7 +1176,7 @@
         while (
             !window.STOP_IG &&
             Date.now() - start <
-                AFTER_UNLIKE_MAX_WAIT
+                config.refreshTimeout
         ) {
             if (
                 normalSelectVisible()
@@ -633,16 +1192,18 @@
     }
 
     async function autoSelect() {
-        if (selectModeActive())
+        if (
+            selectModeActive()
+        ) {
             return true;
+        }
 
         setStatus(
             "Preparing",
             "Waiting for Select."
         );
 
-        let select =
-            null;
+        let select = null;
 
         const start =
             Date.now();
@@ -650,7 +1211,7 @@
         while (
             !window.STOP_IG &&
             Date.now() - start <
-                AFTER_UNLIKE_MAX_WAIT
+                config.refreshTimeout
         ) {
             select =
                 findExactText([
@@ -674,10 +1235,13 @@
 
         while (
             Date.now() - openStart <
-            SELECT_OPEN_MAX_WAIT
+            config.selectOpenTimeout
         ) {
-            if (selectModeActive())
+            if (
+                selectModeActive()
+            ) {
                 return true;
+            }
 
             await sleep(250);
         }
@@ -710,8 +1274,11 @@
 
                 await sleep(800);
 
-                if (selectModeActive())
+                if (
+                    selectModeActive()
+                ) {
                     return true;
+                }
             }
 
             parent =
@@ -727,8 +1294,9 @@
                 'div[role="button"][aria-label="Image with button"]'
             )
         ]
-            .filter(tile =>
-                !panel.contains(tile)
+            .filter(
+                tile =>
+                    !panel.contains(tile)
             )
             .filter(tile => {
                 if (!visible(tile))
@@ -747,7 +1315,9 @@
                 }
 
                 const img =
-                    tile.querySelector("img");
+                    tile.querySelector(
+                        "img"
+                    );
 
                 if (!img)
                     return false;
@@ -782,7 +1352,9 @@
 
     function tileKey(tile) {
         const img =
-            tile.querySelector("img");
+            tile.querySelector(
+                "img"
+            );
 
         return (
             img?.currentSrc ||
@@ -793,8 +1365,11 @@
     }
 
     async function selectTile(tile) {
-        if (!selectModeActive())
+        if (
+            !selectModeActive()
+        ) {
             return false;
+        }
 
         const before =
             selectedCount();
@@ -813,23 +1388,25 @@
 
         while (
             Date.now() - start <
-            CLICK_DELAY + 600
+            config.clickDelay + 600
         ) {
             await sleep(100);
 
             const after =
                 selectedCount();
 
-            if (after === before + 1) {
+            if (
+                after === before + 1
+            ) {
                 const elapsed =
                     Date.now() - start;
 
                 if (
                     elapsed <
-                    CLICK_DELAY
+                    config.clickDelay
                 ) {
                     await sleep(
-                        CLICK_DELAY -
+                        config.clickDelay -
                         elapsed
                     );
                 }
@@ -837,8 +1414,11 @@
                 return true;
             }
 
-            if (after < before)
+            if (
+                after < before
+            ) {
                 return false;
+            }
         }
 
         return false;
@@ -849,14 +1429,13 @@
             top:
                 Math.floor(
                     innerHeight *
-                    SCROLL_AMOUNT
+                    config.scrollAmount
                 ),
-
             behavior: "smooth"
         });
 
         await sleep(
-            SCROLL_DELAY
+            config.scrollDelay
         );
     }
 
@@ -867,29 +1446,33 @@
         const failures =
             new Map();
 
-        let noProgress =
-            0;
+        let noProgress = 0;
 
         while (
             selectedCount() <
-                BATCH_SIZE &&
+                config.batchSize &&
             !window.STOP_IG
         ) {
             if (!onInstagram())
                 return false;
 
-            if (!selectModeActive())
+            if (
+                !selectModeActive()
+            ) {
                 return false;
+            }
 
             const tiles =
                 getTiles();
 
             let added = 0;
 
-            for (const tile of tiles) {
+            for (
+                const tile of tiles
+            ) {
                 if (
                     selectedCount() >=
-                        BATCH_SIZE ||
+                        config.batchSize ||
                     window.STOP_IG
                 ) {
                     break;
@@ -906,24 +1489,36 @@
                 }
 
                 const failCount =
-                    failures.get(key) || 0;
+                    failures.get(key) ||
+                    0;
 
-                if (failCount >= 3)
+                if (
+                    failCount >= 3
+                ) {
                     continue;
+                }
 
                 const before =
                     selectedCount();
 
                 const success =
-                    await selectTile(tile);
+                    await selectTile(
+                        tile
+                    );
 
                 if (success) {
-                    processed.add(key);
-                    failures.delete(key);
+                    processed.add(
+                        key
+                    );
+
+                    failures.delete(
+                        key
+                    );
+
                     added++;
 
                     setStatus(
-                        `Selecting ${selectedCount()} / ${BATCH_SIZE}`,
+                        `Selecting ${selectedCount()} / ${config.batchSize}`,
                         "Processing liked items."
                     );
                 } else {
@@ -943,17 +1538,22 @@
 
             if (
                 selectedCount() >=
-                BATCH_SIZE
+                config.batchSize
             ) {
                 return true;
             }
 
-            if (added === 0)
+            if (
+                added === 0
+            ) {
                 noProgress++;
-            else
+            } else {
                 noProgress = 0;
+            }
 
-            if (noProgress >= 10) {
+            if (
+                noProgress >= 10
+            ) {
                 return (
                     selectedCount() > 0
                 );
@@ -973,8 +1573,9 @@
                 '[role="dialog"]'
             )
         ]
-            .filter(el =>
-                !panel.contains(el)
+            .filter(
+                el =>
+                    !panel.contains(el)
             )
             .filter(visible);
     }
@@ -1007,7 +1608,10 @@
             const B =
                 b.getBoundingClientRect();
 
-            return B.top - A.top;
+            return (
+                B.top -
+                A.top
+            );
         });
 
         return list[0];
@@ -1023,11 +1627,17 @@
             visibleDialogs()
         ) {
             const list =
-                unlikeElements(dialog);
+                unlikeElements(
+                    dialog
+                );
 
-            for (const el of list) {
+            for (
+                const el of list
+            ) {
                 if (
-                    !result.includes(el)
+                    !result.includes(
+                        el
+                    )
                 ) {
                     result.push(el);
                 }
@@ -1037,7 +1647,9 @@
         const current =
             unlikeElements();
 
-        for (const el of current) {
+        for (
+            const el of current
+        ) {
             if (
                 oldElements.has(el)
             ) {
@@ -1059,8 +1671,10 @@
                 b.getBoundingClientRect();
 
             return (
-                A.width * A.height -
-                B.width * B.height
+                A.width *
+                    A.height -
+                B.width *
+                    B.height
             );
         });
 
@@ -1124,8 +1738,11 @@
             attempt < 50;
             attempt++
         ) {
-            if (window.STOP_IG)
+            if (
+                window.STOP_IG
+            ) {
                 return false;
+            }
 
             await sleep(250);
 
@@ -1134,15 +1751,20 @@
                     oldElements
                 );
 
-            if (candidates.length)
+            if (
+                candidates.length
+            ) {
                 break;
+            }
         }
 
-        if (!candidates.length)
+        if (
+            !candidates.length
+        ) {
             return false;
+        }
 
-        let confirmed =
-            false;
+        let confirmed = false;
 
         for (
             let i = 0;
@@ -1156,9 +1778,7 @@
             if (
                 await confirmClickWorked()
             ) {
-                confirmed =
-                    true;
-
+                confirmed = true;
                 break;
             }
         }
@@ -1184,21 +1804,30 @@
             return;
         }
 
+        if (settingsOpen) {
+            toggleSettings();
+        }
+
         running = true;
         window.STOP_IG = false;
 
         startButton.disabled = true;
 
-        log("Script started.");
+        log(
+            "Script started."
+        );
 
         try {
             for (
                 let batch = 1;
-                batch <= MAX_BATCHES;
+                batch <= config.maxBatches;
                 batch++
             ) {
-                if (window.STOP_IG)
+                if (
+                    window.STOP_IG
+                ) {
                     break;
+                }
 
                 setBatch(batch);
                 setSelected(0);
@@ -1226,8 +1855,11 @@
                     );
                 }
 
-                if (window.STOP_IG)
+                if (
+                    window.STOP_IG
+                ) {
                     break;
+                }
 
                 const unlikeOK =
                     await unlikeBatch();
@@ -1244,7 +1876,7 @@
 
                 if (
                     batch <
-                    MAX_BATCHES
+                    config.maxBatches
                 ) {
                     await sleep(700);
 
@@ -1261,7 +1893,9 @@
                 }
             }
 
-            if (window.STOP_IG) {
+            if (
+                window.STOP_IG
+            ) {
                 setStatus(
                     "Stopped",
                     "The operation was stopped."
@@ -1275,13 +1909,17 @@
                 progressElement.style.width =
                     "100%";
             }
+
         } catch (error) {
-            log(error.message);
+            log(
+                error.message
+            );
 
             setStatus(
                 "Stopped",
                 error.message
             );
+
         } finally {
             running = false;
             startButton.disabled = false;
@@ -1296,7 +1934,8 @@
     stopButton.addEventListener(
         "click",
         () => {
-            window.STOP_IG = true;
+            window.STOP_IG =
+                true;
 
             setStatus(
                 "Stopping",
@@ -1307,26 +1946,27 @@
 
     closeButton.addEventListener(
         "click",
-        () => {
-            window.STOP_IG = true;
+        event => {
+            event.stopPropagation();
+
+            window.STOP_IG =
+                true;
+
             panel.remove();
-            window.__IG_UNLIKE_UI__ = null;
+
+            window.__IG_UNLIKE_UI__ =
+                null;
         }
     );
 
     minimizeButton.addEventListener(
         "click",
-        () => {
+        event => {
+            event.stopPropagation();
+
             card.classList.toggle(
                 "igu-minimized"
             );
-
-            minimizeButton.textContent =
-                card.classList.contains(
-                    "igu-minimized"
-                )
-                    ? "+"
-                    : "−";
         }
     );
 
@@ -1383,6 +2023,13 @@
             dragging = false;
         }
     );
+
+    applyTheme(
+        config.theme
+    );
+
+    setBatch(0);
+    setSelected(0);
 
     setStatus(
         "Ready",
